@@ -30,6 +30,7 @@ async function run() {
     // await client.connect();
 
     const assingmentCollection = client.db('StudyBuddyHub').collection("assignments");
+    const submissionCollection = client.db('StudyBuddyHub').collection("submission")
 
     //create assignment-------
     app.post('/create-assignments', async(req, res)=>{
@@ -82,6 +83,19 @@ async function run() {
         }
       }
       const result = await assingmentCollection.updateOne(filter, updatedDoc, options)
+      res.send(result)
+    })
+
+    //post api for submission assignments collection
+    app.post('/assignment-submission', async(req, res)=>{
+      const submission = req.body;
+      const result = await submissionCollection.insertOne(submission)
+      res.send(result)
+    })
+
+    //get api for submited assignments---
+    app.get('/assignment-submissions', async(req, res)=>{
+      const result = await submissionCollection.find().toArray()
       res.send(result)
     })
 
