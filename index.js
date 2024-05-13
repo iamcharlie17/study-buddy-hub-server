@@ -99,6 +99,44 @@ async function run() {
       res.send(result)
     })
 
+    //get data using id for give assignment marks
+    app.get('/assignment-marks/:id' , async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await submissionCollection.findOne(query);
+      res.send(result)
+    })    
+
+    // update submission data for obtain marks
+    app.put('/assignment-marks/:id', async(req, res)=>{
+      const id = req.params.id;
+      const marksInfo = req.body;
+      // console.log(marksInfo, id)
+      const filter = {_id: new ObjectId(id)}
+      const options = {
+        upsert: true
+      }
+      const updateMarks = {
+        $set: {
+          obtainedMarks: marksInfo.marks,
+          feedback: marksInfo.feedback
+        }
+      }
+      const result = await submissionCollection.updateOne(filter, updateMarks, options)
+      res.send(result)
+    })
+
+    //get api for filtered data-----
+    app.get('/assignments/filter/:difficulty', async(req, res)=>{
+      const difficulty = req.params.difficulty;
+      // console.log(difficulty)
+
+      const query = {difficulty: difficulty}
+      const result = await assingmentCollection.find(query).toArray()
+      res.send(result)
+
+    })
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
