@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 3200
 
@@ -43,6 +43,45 @@ async function run() {
     // get api for all assignments
     app.get('/assignments', async(req, res)=>{
       const result = await assingmentCollection.find().toArray()
+      res.send(result)
+    })
+
+   
+
+    //get api for a single assignment using id
+    app.get('/assignment-details/:id' , async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await assingmentCollection.findOne(query);
+      res.send(result);
+    })
+
+     //delete api ----
+     app.delete('/delete-assignment/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await assingmentCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    //update api----
+    app.put('/update-assignment/:id', async(req, res)=>{
+      const id = req.params.id;
+      const updatedInfo = req.body;
+      // console.log(updatedInfo)
+      const filter = {_id: new ObjectId(id)}
+      const options = { upsert: true }
+      const updatedDoc = {
+        $set:{
+          title: updatedInfo.title,
+          description: updatedInfo.description,
+          marks: updatedInfo.marks,
+          difficulty: updatedInfo.difficulty,
+          dueDate: updatedInfo.dueDate,
+          thumbnail: updatedInfo.thumbnail,
+        }
+      }
+      const result = await assingmentCollection.updateOne(filter, updatedDoc, options)
       res.send(result)
     })
 
