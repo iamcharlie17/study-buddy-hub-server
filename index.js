@@ -4,12 +4,30 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 3200
 
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+
 
 // middleware 
 app.use(cors({
-  origin: ['http://localhost:5173']
+  origin: ['http://localhost:5173', 'https://study-buddy-hub-4ba13.web.app'],
+  credentials: true
 }))
 app.use(express.json())
+app.use(cookieParser());
+
+const verifyToken = (req, res, next) =>{
+  const token = req.cookies?.accessToken;
+  // console.log("middleware token: ", token)
+  if(!token) return res.status(401).send({message: "forbidden"})
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+    if(err) return res.status(401).send({message: "forbidden"})
+    // console.log(decoded)
+    req.user = decoded
+    next()
+  })
+  
+}
 
 
 const uri = "mongodb+srv://studyBuddyHub:fTsvY5z0jn1auyOW@cluster0.x7zkge4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -31,6 +49,23 @@ async function run() {
 
     const assingmentCollection = client.db('StudyBuddyHub').collection("assignments");
     const submissionCollection = client.db('StudyBuddyHub').collection("submission")
+
+    //post jwt---
+
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      // console.log(user)
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1hr",
+      });
+      res.cookie("accessToken", token, {
+        httpOnly: true,
+        secure: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      });
+      res.send({ message: "success" });
+    });
 
     //create assignment-------
     app.post('/create-assignments', async(req, res)=>{
@@ -94,7 +129,7 @@ async function run() {
     })
 
     //get api for submited assignments---
-    app.get('/assignment-submissions', async(req, res)=>{
+    app.get('/assignment-submissions', verifyToken, async(req, res)=>{
       const result = await submissionCollection.find().toArray()
       res.send(result)
     })
